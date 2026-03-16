@@ -24,7 +24,8 @@
     }
     .chart-tab.active { background: var(--text); color: var(--surface); }
     .chart-tab:hover:not(.active) { background: var(--bg); color: var(--text); }
-    #stock-chart { width: 100% !important; height: 220px !important; max-height: 220px; display: block; }
+    .chart-wrapper { position: relative; height: 220px; width: 100%; overflow: hidden; }
+    #stock-chart { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; }
 
     .search-wrap { position: relative; margin-bottom: 16px; }
     .search-results {
@@ -124,7 +125,7 @@
               <button class="chart-tab active" data-range="1M">1M</button>
               <button class="chart-tab" data-range="3M">3M</button>
             </div>
-            <canvas id="stock-chart"></canvas>
+            <div class="chart-wrapper"><canvas id="stock-chart"></canvas></div>
           </div>
 
           <div class="card">
