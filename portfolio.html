@@ -7,17 +7,19 @@
   <link rel="stylesheet" href="css/style.css"/>
   <link rel="stylesheet" href="css/sidebar.css"/>
   <style>
-    .portfolio-grid { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
-    .trade-form { display: flex; flex-direction: column; gap: 12px; }
-    .trade-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .est-cost { font-size: 12px; color: var(--text-3); padding: 8px 0; border-top: 1px solid var(--border); margin-top: 4px; }
-    .est-cost strong { color: var(--text); font-family: var(--mono); }
-    .balance-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--text-2); }
-    .balance-amount { font-family: var(--mono); font-weight: 500; color: var(--text); }
-    .holding-bar { height: 3px; background: var(--bg); border-radius: 2px; margin-top: 4px; overflow: hidden; }
-    .holding-bar-fill { height: 100%; background: var(--text); border-radius: 2px; }
-    .empty-state { text-align: center; padding: 32px; color: var(--text-3); font-size: 13px; }
-    @media(max-width:900px) { .portfolio-grid { grid-template-columns: 1fr; } }
+    .portfolio-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+    .trade-form{display:flex;flex-direction:column;gap:12px}
+    .trade-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .est-cost{font-size:12px;color:var(--text-3);padding:8px 0;border-top:1px solid var(--border);margin-top:4px}
+    .est-cost strong{color:var(--text);font-family:var(--mono)}
+    .balance-pill{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text-2)}
+    .balance-amount{font-family:var(--mono);font-weight:500;color:var(--text)}
+    .holding-bar{height:3px;background:var(--bg);border-radius:2px;margin-top:4px;overflow:hidden}
+    .holding-bar-fill{height:100%;background:var(--text);border-radius:2px}
+    .empty-state{text-align:center;padding:32px;color:var(--text-3);font-size:13px}
+    @media(max-width:900px){.portfolio-grid{grid-template-columns:1fr}}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+    .fade-in{animation:fadeIn .3s ease}
   </style>
 </head>
 <body>
@@ -32,7 +34,7 @@
         <span class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg></span>
         <span class="nav-label">Dashboard</span>
       </a>
-      <a class="nav-link" data-page="portfolio" href="portfolio.html">
+      <a class="nav-link active" data-page="portfolio" href="portfolio.html">
         <span class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,11 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg></span>
         <span class="nav-label">Portfolio</span>
       </a>
@@ -41,7 +43,7 @@
       <div class="user-row">
         <div class="user-avatar" id="user-avatar">U</div>
         <div class="user-info">
-          <div class="user-name" id="user-name">Loading...</div>
+          <div class="user-name" id="user-name">User</div>
           <div class="user-email" id="user-email"></div>
         </div>
       </div>
@@ -52,9 +54,6 @@
 
   <div class="main-content">
     <div class="topbar">
-      <button id="mobile-menu" style="display:none;background:none;border:none;cursor:pointer;padding:4px" class="btn">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="1" y1="4" x2="15" y2="4"/><line x1="1" y1="8" x2="15" y2="8"/><line x1="1" y1="12" x2="15" y2="12"/></svg>
-      </button>
       <span style="font-size:14px;font-weight:500">Portfolio</span>
       <div style="margin-left:auto">
         <span class="balance-pill">Cash <span class="balance-amount" id="balance-display">$10,000.00</span></span>
@@ -64,8 +63,8 @@
     <div class="page-body">
       <div class="stat-grid" style="margin-bottom:20px">
         <div class="stat-card"><div class="stat-label">Portfolio value</div><div class="stat-val" id="stat-value">$0.00</div></div>
-        <div class="stat-card"><div class="stat-label">Total P&amp;L</div><div class="stat-val" id="stat-pl">$0.00</div></div>
-        <div class="stat-card"><div class="stat-label">Return</div><div class="stat-val" id="stat-return">0.0%</div></div>
+        <div class="stat-card"><div class="stat-label">Total P&amp;L</div><div class="stat-val" id="stat-pl">+$0.00</div></div>
+        <div class="stat-card"><div class="stat-label">Return</div><div class="stat-val" id="stat-return">+0.0%</div></div>
         <div class="stat-card"><div class="stat-label">Positions</div><div class="stat-val" id="stat-positions">0</div></div>
       </div>
 
@@ -116,77 +115,128 @@
     </div>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
 
-<!-- Firebase compat SDKs -->
+<!-- Firebase compat -->
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth-compat.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-firestore-compat.min.js"></script>
 
 <script>
-// ── Paste your Firebase config here (same as js/firebase.js) ──
-const firebaseConfig = {
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyD2RFaPj-J2p5_WZAuasE3qzZSlqwjllJU",
   authDomain: "stocksense-860a5.firebaseapp.com",
-  databaseURL: "https://stocksense-860a5-default-rtdb.firebaseio.com",
   projectId: "stocksense-860a5",
   storageBucket: "stocksense-860a5.firebasestorage.app",
   messagingSenderId: "994981922192",
-  appId: "1:994981922192:web:ec5e09e765d5fcaaf49f15",
-  measurementId: "G-HZQQG8QECL"
+  appId: "1:994981922192:web:ec5e09e765d5fcaaf49f15"
 };
-
-firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 const STARTING_BALANCE = 10000;
-let userData = null;
-let currentUser = null;
+const PRICES = {
+  AAPL:189.30, MSFT:415.10, TSLA:248.50, NVDA:875.20,
+  GOOGL:174.90, AMZN:192.50, META:530.80, NFLX:645.20,
+  RELIANCE:2850.00, TCS:3920.00, INFY:1780.00
+};
 
-// ── Auth guard ──
+// State — always loaded from localStorage first, synced to Firebase when possible
+let state = {
+  balance: STARTING_BALANCE,
+  trades: [],
+  watchlist: ["AAPL", "MSFT", "TSLA"]
+};
+let currentUser = null;
+const LS_KEY = () => "stocksense_" + (currentUser ? currentUser.uid : "guest");
+
+function saveLocal() {
+  localStorage.setItem(LS_KEY(), JSON.stringify(state));
+}
+
+function loadLocal() {
+  const raw = localStorage.getItem(LS_KEY());
+  if (raw) { try { state = JSON.parse(raw); } catch(e) {} }
+}
+
+async function saveToFirebase() {
+  if (!currentUser) return;
+  try {
+    await db.collection("users").doc(currentUser.uid).set(state, { merge: true });
+  } catch(e) {
+    // silently ignore — localStorage already saved
+  }
+}
+
+async function loadFromFirebase() {
+  if (!currentUser) return;
+  try {
+    const snap = await db.collection("users").doc(currentUser.uid).get();
+    if (snap.exists) {
+      const data = snap.data();
+      state = {
+        balance: data.balance ?? STARTING_BALANCE,
+        trades: data.trades || [],
+        watchlist: data.watchlist || ["AAPL","MSFT","TSLA"]
+      };
+      saveLocal();
+    }
+  } catch(e) {
+    // use localStorage fallback
+  }
+}
+
+// ── Auth ──
 auth.onAuthStateChanged(async (user) => {
   if (!user) { window.location.href = "index.html"; return; }
   currentUser = user;
   document.getElementById("user-name").textContent = user.displayName || "User";
   document.getElementById("user-email").textContent = user.email;
   document.getElementById("user-avatar").textContent = (user.displayName || user.email || "U")[0].toUpperCase();
-  await loadUserData();
+
+  loadLocal();
+  renderAll();
+
+  // Try to load from Firebase in background
+  await loadFromFirebase();
+  renderAll();
+
   setupButtons();
 });
 
-// ── Load user data ──
-async function loadUserData() {
-  const snap = await db.collection("users").doc(currentUser.uid).get();
-  if (snap.exists) {
-    userData = snap.data();
-  } else {
-    userData = { balance: STARTING_BALANCE, trades: [], watchlist: ["AAPL","MSFT","TSLA"] };
-    await db.collection("users").doc(currentUser.uid).set(userData);
-  }
-  renderAll();
-}
-
-// ── Setup all button listeners ──
 function setupButtons() {
   document.getElementById("btn-buy").addEventListener("click", () => executeTrade("buy"));
   document.getElementById("btn-sell").addEventListener("click", () => executeTrade("sell"));
   document.getElementById("btn-add-watch").addEventListener("click", addToWatchlist);
-  document.getElementById("btn-logout").addEventListener("click", () => auth.signOut().then(() => window.location.href = "index.html"));
+  document.getElementById("btn-logout").addEventListener("click", () => {
+    auth.signOut().then(() => window.location.href = "index.html");
+  });
+  document.getElementById("sidebar-toggle").addEventListener("click", () => {
+    document.querySelector(".app-shell").classList.toggle("sidebar-collapsed");
+  });
   document.getElementById("trade-symbol").addEventListener("input", function() {
     this.value = this.value.toUpperCase();
     updateEstimate();
   });
   document.getElementById("trade-qty").addEventListener("input", updateEstimate);
-
-  // Sidebar toggle
-  document.getElementById("sidebar-toggle").addEventListener("click", () => {
-    document.querySelector(".app-shell").classList.toggle("sidebar-collapsed");
-  });
 }
 
-// ── Render everything ──
+// ── Price lookup ──
+function getPrice(symbol) {
+  return PRICES[symbol] || (100 + (symbol.charCodeAt(0) * 3.7 % 400));
+}
+
+async function fetchLivePrice(symbol) {
+  try {
+    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=d6s51jhr01qrb5i8lumgd6s51jhr01qrb5i8lun0`);
+    const json = await res.json();
+    if (json && json.c && json.c > 0) return json.c;
+  } catch(e) {}
+  return getPrice(symbol);
+}
+
+// ── Render ──
 function renderAll() {
   renderBalance();
   renderHoldings();
@@ -195,63 +245,65 @@ function renderAll() {
 }
 
 function renderBalance() {
-  const bal = userData.balance ?? STARTING_BALANCE;
-  document.getElementById("balance-display").textContent = "$" + bal.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+  document.getElementById("balance-display").textContent =
+    "$" + state.balance.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
-async function renderHoldings() {
-  const holdings = computeHoldings(userData.trades || []);
+function renderHoldings() {
+  const holdings = computeHoldings(state.trades);
   const syms = Object.keys(holdings);
   document.getElementById("holdings-count").textContent = syms.length + " position" + (syms.length !== 1 ? "s" : "");
   document.getElementById("stat-positions").textContent = syms.length;
 
   if (!syms.length) {
     document.getElementById("holdings-table").innerHTML = '<div class="empty-state">No holdings yet. Buy your first stock!</div>';
-    updateStats(0, 0, STARTING_BALANCE);
+    updateStats(0, 0);
     return;
   }
 
   let totalValue = 0, totalCost = 0, rows = [];
   for (const sym of syms) {
     const h = holdings[sym];
-    const price = await fetchPrice(sym);
+    const price = getPrice(sym);
     const marketVal = price * h.qty;
     const costBasis = h.avgPrice * h.qty;
     const pl = marketVal - costBasis;
-    const plPct = (pl / costBasis) * 100;
+    const plPct = costBasis > 0 ? (pl / costBasis) * 100 : 0;
     totalValue += marketVal;
     totalCost += costBasis;
     rows.push({ sym, h, price, marketVal, pl, plPct, up: pl >= 0 });
   }
 
-  updateStats(totalValue, totalValue - totalCost, totalCost);
+  updateStats(totalValue, totalValue - totalCost);
   rows.sort((a, b) => b.marketVal - a.marketVal);
   const maxVal = Math.max(...rows.map(r => r.marketVal));
 
   document.getElementById("holdings-table").innerHTML = `
     <table class="data-table">
-      <thead><tr><th>Symbol</th><th>Qty</th><th>Avg</th><th>Now</th><th>Value</th><th>P&L</th></tr></thead>
-      <tbody>${rows.map(r => `<tr>
-        <td><strong>${r.sym}</strong><div class="holding-bar"><div class="holding-bar-fill" style="width:${Math.round((r.marketVal/maxVal)*100)}%"></div></div></td>
+      <thead><tr><th>Symbol</th><th>Qty</th><th>Avg price</th><th>Current</th><th>Value</th><th>P&amp;L</th></tr></thead>
+      <tbody class="fade-in">${rows.map(r => `<tr>
+        <td><strong>${r.sym}</strong>
+          <div class="holding-bar"><div class="holding-bar-fill" style="width:${Math.round((r.marketVal/maxVal)*100)}%"></div></div>
+        </td>
         <td class="num">${r.h.qty}</td>
         <td class="num">$${r.h.avgPrice.toFixed(2)}</td>
         <td class="num">$${r.price.toFixed(2)}</td>
         <td class="num">$${r.marketVal.toFixed(2)}</td>
-        <td><span class="badge ${r.up?'badge-up':'badge-down'}">${r.up?'+':''}${r.pl.toFixed(2)}</span></td>
+        <td><span class="badge ${r.up?'badge-up':'badge-down'}">${r.up?'+':''}${r.pl.toFixed(2)} (${r.up?'+':''}${r.plPct.toFixed(1)}%)</span></td>
       </tr>`).join("")}</tbody>
     </table>`;
 }
 
-function updateStats(totalValue, pl, totalCost) {
+function updateStats(totalValue, pl) {
   const up = pl >= 0;
   document.getElementById("stat-value").textContent = "$" + totalValue.toFixed(2);
   const plEl = document.getElementById("stat-pl");
-  plEl.textContent = (up?"+":"") + "$" + Math.abs(pl).toFixed(2);
-  plEl.className = "stat-val " + (up?"up":"down");
-  const ret = totalCost > 0 ? (pl/totalCost)*100 : 0;
+  plEl.textContent = (up ? "+" : "") + "$" + Math.abs(pl).toFixed(2);
+  plEl.className = "stat-val " + (up ? "up" : "down");
+  const ret = STARTING_BALANCE > 0 ? (pl / STARTING_BALANCE) * 100 : 0;
   const retEl = document.getElementById("stat-return");
-  retEl.textContent = (up?"+":"") + ret.toFixed(1) + "%";
-  retEl.className = "stat-val " + (up?"up":"down");
+  retEl.textContent = (up ? "+" : "") + ret.toFixed(1) + "%";
+  retEl.className = "stat-val " + (up ? "up" : "down");
 }
 
 function computeHoldings(trades) {
@@ -263,7 +315,7 @@ function computeHoldings(trades) {
       h[t.symbol].qty += t.qty;
     } else {
       h[t.symbol].qty -= t.qty;
-      h[t.symbol].totalCost = h[t.symbol].avgPrice * h[t.symbol].qty;
+      h[t.symbol].totalCost = h[t.symbol].qty > 0 ? h[t.symbol].avgPrice * h[t.symbol].qty : 0;
     }
     if (h[t.symbol].qty > 0) {
       h[t.symbol].avgPrice = h[t.symbol].totalCost / h[t.symbol].qty;
@@ -275,7 +327,7 @@ function computeHoldings(trades) {
 }
 
 function renderWatchlist() {
-  const wl = userData.watchlist || [];
+  const wl = state.watchlist || [];
   const container = document.getElementById("watchlist-manage");
   if (!wl.length) { container.innerHTML = '<div class="empty-state">Watchlist is empty.</div>'; return; }
   container.innerHTML = wl.map(sym => `
@@ -289,40 +341,27 @@ function renderWatchlist() {
 }
 
 function renderActivity() {
-  const trades = (userData.trades || []).slice().reverse().slice(0, 10);
+  const trades = (state.trades || []).slice().reverse().slice(0, 10);
   const log = document.getElementById("activity-log");
   if (!trades.length) { log.innerHTML = '<div class="empty-state">No trades yet.</div>'; return; }
-  log.innerHTML = trades.map(t => `
+  log.innerHTML = '<div class="fade-in">' + trades.map(t => `
     <div class="activity-item">
       <div class="activity-dot ${t.type}"></div>
       <div>
         <div class="activity-text">${t.type === "buy" ? "Bought" : "Sold"} ${t.qty} × <strong>${t.symbol}</strong> @ $${t.price.toFixed(2)}</div>
-        <div class="activity-time">${new Date(t.date).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</div>
+        <div class="activity-time">${new Date(t.date).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
       </div>
-    </div>`).join("");
-}
-
-// ── Fetch price (mock for now, swap with Finnhub if needed) ──
-async function fetchPrice(symbol) {
-  const prices = { AAPL:189.30, MSFT:415.10, TSLA:248.50, NVDA:875.20, GOOGL:174.90, AMZN:192.50, META:530.80, NFLX:645.20 };
-  try {
-    const API_KEY = "d6s51jhr01qrb5i8lumgd6s51jhr01qrb5i8lun0";
-    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`);
-    const json = await res.json();
-    if (json && json.c && json.c > 0) return json.c;
-  } catch(e) {}
-  return prices[symbol] || 100;
+    </div>`).join("") + '</div>';
 }
 
 async function updateEstimate() {
   const sym = document.getElementById("trade-symbol").value.trim();
   const qty = parseInt(document.getElementById("trade-qty").value) || 0;
   if (!sym || !qty) { document.getElementById("est-cost").textContent = "—"; return; }
-  const price = await fetchPrice(sym);
+  const price = getPrice(sym);
   document.getElementById("est-cost").textContent = "$" + (price * qty).toFixed(2);
 }
 
-// ── Execute trade ──
 async function executeTrade(type) {
   const errEl = document.getElementById("trade-error");
   errEl.textContent = "";
@@ -333,63 +372,64 @@ async function executeTrade(type) {
   if (!sym) { errEl.textContent = "Enter a stock symbol."; return; }
   if (!qty || qty < 1) { errEl.textContent = "Enter a valid quantity."; return; }
 
-  const price = await fetchPrice(sym);
-  const cost = price * qty;
-  const bal = userData.balance ?? STARTING_BALANCE;
+  // Try live price, fall back to mock
+  const price = await fetchLivePrice(sym);
+  const cost = parseFloat((price * qty).toFixed(2));
+  const bal = state.balance;
 
-  if (type === "buy") {
-    if (cost > bal) { errEl.textContent = "Not enough balance. You have $" + bal.toFixed(2); return; }
+  if (type === "buy" && cost > bal) {
+    errEl.textContent = "Not enough cash. You have $" + bal.toFixed(2);
+    return;
   }
 
   if (type === "sell") {
-    const holdings = computeHoldings(userData.trades || []);
+    const holdings = computeHoldings(state.trades);
     if (!holdings[sym] || holdings[sym].qty < qty) {
-      errEl.textContent = "You don't have " + qty + " shares of " + sym + ".";
+      errEl.textContent = "You don't have " + qty + " share(s) of " + sym;
       return;
     }
   }
 
-  const trade = { symbol: sym, qty: qty, price: price, type: type, date: new Date().toISOString() };
-  const newBalance = parseFloat((type === "buy" ? bal - cost : bal + cost).toFixed(2));
-  const newTrades = [...(userData.trades || []), trade];
+  // Update state
+  const trade = { symbol: sym, qty, price, type, date: new Date().toISOString() };
+  state.trades = [...state.trades, trade];
+  state.balance = parseFloat((type === "buy" ? bal - cost : bal + cost).toFixed(2));
 
-  try {
-    await db.collection("users").doc(currentUser.uid).set({
-      trades: newTrades,
-      balance: newBalance
-    }, { merge: true });
+  // Save locally immediately — always works
+  saveLocal();
 
-    userData.trades = newTrades;
-    userData.balance = newBalance;
+  // Try Firebase in background
+  saveToFirebase();
 
-    document.getElementById("trade-symbol").value = "";
-    document.getElementById("trade-qty").value = "1";
-    document.getElementById("est-cost").textContent = "—";
+  // Clear inputs
+  document.getElementById("trade-symbol").value = "";
+  document.getElementById("trade-qty").value = "1";
+  document.getElementById("est-cost").textContent = "—";
 
-    showToast((type === "buy" ? "Bought" : "Sold") + " " + qty + " × " + sym + " @ $" + price.toFixed(2));
-    renderAll();
-  } catch(e) {
-    errEl.textContent = "Error saving trade: " + e.message;
-  }
+  // Show success
+  showToast((type === "buy" ? "✓ Bought " : "✓ Sold ") + qty + " × " + sym + " @ $" + price.toFixed(2));
+
+  // Re-render immediately
+  renderAll();
 }
 
 async function addToWatchlist() {
   const input = document.getElementById("watchlist-input");
   const sym = input.value.trim().toUpperCase();
   if (!sym) return;
-  if ((userData.watchlist || []).includes(sym)) { showToast(sym + " already in watchlist."); return; }
-  const newWl = [...(userData.watchlist || []), sym];
-  await db.collection("users").doc(currentUser.uid).set({ watchlist: newWl }, { merge: true });
-  userData.watchlist = newWl;
+  if (state.watchlist.includes(sym)) { showToast(sym + " already in watchlist."); return; }
+  state.watchlist = [...state.watchlist, sym];
+  saveLocal();
+  saveToFirebase();
   input.value = "";
   renderWatchlist();
   showToast(sym + " added to watchlist.");
 }
 
 async function removeFromWatchlist(sym) {
-  const newWl = (userData.watchlist || []).filter(s => s !== sym);
-  await db.collection("users").doc(currentUser.uid).set({ watchlist: newWl }, { merge: true });
-  userData.watchlist = newWl;
+  state.watchlist = state.watchlist.filter(s => s !== sym);
+  saveLocal();
+  saveToFirebase();
   renderWatchlist();
   showToast(sym + " removed.");
 }
