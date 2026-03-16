@@ -311,15 +311,16 @@
     }
 
     const trade = { symbol: sym, qty, price, type, date: new Date().toISOString() };
-    const newBalance = type === "buy" ? bal - cost : bal + cost;
+    const newBalance = parseFloat((type === "buy" ? bal - cost : bal + cost).toFixed(2));
+    const newTrades = [...(userData.trades || []), trade];
 
     await updateDoc(doc(db, "users", currentUser.uid), {
-      trades: arrayUnion(trade),
-      balance: parseFloat(newBalance.toFixed(2))
+      trades: newTrades,
+      balance: newBalance
     });
 
-    userData.trades = [...(userData.trades || []), trade];
-    userData.balance = parseFloat(newBalance.toFixed(2));
+    userData.trades = newTrades;
+    userData.balance = newBalance;
 
     showToast(`${type === 'buy' ? 'Bought' : 'Sold'} ${qty} × ${sym} at $${price.toFixed(2)}`);
     document.getElementById("trade-symbol").value = "";
