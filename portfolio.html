@@ -119,10 +119,10 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- Firebase SDKs loaded as regular scripts first -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Firebase compat SDKs -->
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-firestore-compat.min.js"></script>
 
 <script>
 // ── Paste your Firebase config here (same as js/firebase.js) ──
@@ -163,6 +163,7 @@ async function loadUserData() {
     userData = snap.data();
   } else {
     userData = { balance: STARTING_BALANCE, trades: [], watchlist: ["AAPL","MSFT","TSLA"] };
+    await db.collection("users").doc(currentUser.uid).set(userData);
   }
   renderAll();
 }
@@ -353,10 +354,10 @@ async function executeTrade(type) {
   const newTrades = [...(userData.trades || []), trade];
 
   try {
-    await db.collection("users").doc(currentUser.uid).update({
+    await db.collection("users").doc(currentUser.uid).set({
       trades: newTrades,
       balance: newBalance
-    });
+    }, { merge: true });
 
     userData.trades = newTrades;
     userData.balance = newBalance;
@@ -378,7 +379,7 @@ async function addToWatchlist() {
   if (!sym) return;
   if ((userData.watchlist || []).includes(sym)) { showToast(sym + " already in watchlist."); return; }
   const newWl = [...(userData.watchlist || []), sym];
-  await db.collection("users").doc(currentUser.uid).update({ watchlist: newWl });
+  await db.collection("users").doc(currentUser.uid).set({ watchlist: newWl }, { merge: true });
   userData.watchlist = newWl;
   input.value = "";
   renderWatchlist();
@@ -387,7 +388,7 @@ async function addToWatchlist() {
 
 async function removeFromWatchlist(sym) {
   const newWl = (userData.watchlist || []).filter(s => s !== sym);
-  await db.collection("users").doc(currentUser.uid).update({ watchlist: newWl });
+  await db.collection("users").doc(currentUser.uid).set({ watchlist: newWl }, { merge: true });
   userData.watchlist = newWl;
   renderWatchlist();
   showToast(sym + " removed.");
