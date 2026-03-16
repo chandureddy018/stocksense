@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StockSense — IOP 2026</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .auth-page { flex-direction: column; gap: 0; background: var(--bg); }
+    .auth-hero {
+      text-align: center; padding: 60px 24px 40px;
+    }
+    .auth-hero h1 {
+      font-size: 36px; font-weight: 300; letter-spacing: -.03em; margin-bottom: 10px;
+    }
+    .auth-hero h1 strong { font-weight: 500; }
+    .auth-hero p { font-size: 14px; color: var(--text-2); max-width: 340px; margin: 0 auto; }
+    .auth-tabs { display: flex; gap: 2px; margin-bottom: 28px; background: var(--bg); border-radius: var(--radius); padding: 3px; }
+    .auth-tab {
+      flex: 1; padding: 8px; text-align: center; font-size: 13px; font-weight: 500;
+      border-radius: 8px; cursor: pointer; transition: background .15s, color .15s;
+      color: var(--text-3); border: none; background: none; font-family: var(--font);
+    }
+    .auth-tab.active { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .auth-form { display: none; }
+    .auth-form.active { display: block; }
+    .strip {
+      display: flex; gap: 8px; overflow-x: auto; padding: 0 24px 32px;
+      max-width: 520px; margin: 0 auto; scrollbar-width: none;
+    }
+    .strip::-webkit-scrollbar { display: none; }
+    .strip-item {
+      flex-shrink: 0; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px; min-width: 110px;
+    }
+    .strip-sym { font-size: 11px; font-weight: 500; color: var(--text-3); }
+    .strip-price { font-size: 14px; font-weight: 300; font-family: var(--mono); color: var(--text); margin: 2px 0; }
+    .strip-chg { font-size: 11px; }
+  </style>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-hero">
+    <h1>Stock<strong>Sense</strong></h1>
+    <p>Real-time market dashboard. Track stocks, simulate trades, stay informed. — IOP Project 2026</p>
+  </div>
+
+  <div class="strip" id="preview-strip">
+    <div class="strip-item"><div class="strip-sym">AAPL</div><div class="strip-price">$189.30</div><div class="strip-chg up">+1.24%</div></div>
+    <div class="strip-item"><div class="strip-sym">MSFT</div><div class="strip-price">$415.10</div><div class="strip-chg up">+0.88%</div></div>
+    <div class="strip-item"><div class="strip-sym">TSLA</div><div class="strip-price">$248.50</div><div class="strip-chg down">-2.10%</div></div>
+    <div class="strip-item"><div class="strip-sym">NVDA</div><div class="strip-price">$875.20</div><div class="strip-chg up">+3.41%</div></div>
+    <div class="strip-item"><div class="strip-sym">GOOGL</div><div class="strip-price">$174.90</div><div class="strip-chg up">+0.44%</div></div>
+  </div>
+
+  <div class="auth-box" style="margin: 0 auto 60px;">
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Sign in</button>
+      <button class="auth-tab" onclick="switchTab('signup')">Create account</button>
+    </div>
+
+    <!-- Login form -->
+    <div class="auth-form active" id="form-login">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="input" type="email" id="login-email" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="input" type="password" id="login-password" placeholder="••••••••"/>
+      </div>
+      <div class="form-error" id="login-error"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="handleLogin()">Sign in</button>
+    </div>
+
+    <!-- Signup form -->
+    <div class="auth-form" id="form-signup">
+      <div class="form-group">
+        <label class="form-label">Your name</label>
+        <input class="input" type="text" id="signup-name" placeholder="Full name"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="input" type="email" id="signup-email" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="input" type="password" id="signup-password" placeholder="Min 6 characters"/>
+      </div>
+      <div class="form-error" id="signup-error"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="handleSignup()">Create account</button>
+      <p class="form-link">Starting balance: <strong>$10,000</strong> virtual cash</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { signIn, signUp, redirectIfAuth } from "./js/auth.js";
+
+  redirectIfAuth();
+
+  window.switchTab = (tab) => {
+    document.querySelectorAll(".auth-tab").forEach((t,i) => t.classList.toggle("active", (tab==="login"?i===0:i===1)));
+    document.getElementById("form-login").classList.toggle("active", tab === "login");
+    document.getElementById("form-signup").classList.toggle("active", tab === "signup");
+  };
+
+  window.handleLogin = async () => {
+    const email = document.getElementById("login-email").value.trim();
+    const pass = document.getElementById("login-password").value;
+    const errEl = document.getElementById("login-error");
+    errEl.textContent = "";
+    if (!email || !pass) { errEl.textContent = "Please fill in all fields."; return; }
+    try {
+      await signIn(email, pass);
+      window.location.href = "dashboard.html";
+    } catch(e) {
+      errEl.textContent = e.code === "auth/invalid-credential" ? "Invalid email or password." : e.message;
+    }
+  };
+
+  window.handleSignup = async () => {
+    const name = document.getElementById("signup-name").value.trim();
+    const email = document.getElementById("signup-email").value.trim();
+    const pass = document.getElementById("signup-password").value;
+    const errEl = document.getElementById("signup-error");
+    errEl.textContent = "";
+    if (!name || !email || !pass) { errEl.textContent = "Please fill in all fields."; return; }
+    if (pass.length < 6) { errEl.textContent = "Password must be at least 6 characters."; return; }
+    try {
+      await signUp(email, pass, name);
+      window.location.href = "dashboard.html";
+    } catch(e) {
+      errEl.textContent = e.code === "auth/email-already-in-use" ? "An account with this email already exists." : e.message;
+    }
+  };
+
+  // Allow Enter key to submit
+  document.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      const active = document.querySelector(".auth-form.active")?.id;
+      if (active === "form-login") window.handleLogin();
+      else if (active === "form-signup") window.handleSignup();
+    }
+  });
+</script>
+</body>
+</html>

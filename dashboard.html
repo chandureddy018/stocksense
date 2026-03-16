@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — StockSense</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/sidebar.css"/>
+  <style>
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }
+    .chart-card { padding: 20px; }
+    .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; }
+    .chart-symbol { font-size: 13px; font-weight: 500; color: var(--text-3); }
+    .chart-price { font-size: 28px; font-weight: 300; font-family: var(--mono); letter-spacing: -.02em; }
+    .chart-change { font-size: 13px; margin-top: 2px; margin-bottom: 16px; }
+    .chart-meta { display: flex; gap: 20px; margin-bottom: 16px; }
+    .chart-meta-item { font-size: 11px; color: var(--text-3); }
+    .chart-meta-item strong { display: block; font-size: 12px; color: var(--text); font-weight: 500; font-family: var(--mono); }
+    .chart-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+    .chart-tab {
+      padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;
+      cursor: pointer; color: var(--text-3); border: none; background: none;
+      font-family: var(--font); transition: background .15s, color .15s;
+    }
+    .chart-tab.active { background: var(--text); color: var(--surface); }
+    .chart-tab:hover:not(.active) { background: var(--bg); color: var(--text); }
+    #stock-chart { width: 100%; height: 220px; }
+
+    .search-wrap { position: relative; margin-bottom: 16px; }
+    .search-results {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); z-index: 20; margin-top: 4px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.06);
+      display: none;
+    }
+    .search-results.open { display: block; }
+    .search-result-item {
+      padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    }
+    .search-result-item:hover { background: var(--bg); }
+    .search-result-item:not(:last-child) { border-bottom: 1px solid var(--border); }
+    .sr-sym { font-size: 13px; font-weight: 500; }
+    .sr-name { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+    .sr-type { font-size: 10px; color: var(--text-3); background: var(--bg); padding: 2px 6px; border-radius: 4px; }
+
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 4px; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .live-dot { animation: pulse 2s ease-in-out infinite; }
+
+    @media(max-width:900px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-logo">Stock<strong>Sense</strong></span>
+      <button class="sidebar-toggle" id="sidebar-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-link" data-page="dashboard" href="dashboard.html">
+        <span class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg></span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a class="nav-link" data-page="portfolio" href="portfolio.html">
+        <span class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,11 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg></span>
+        <span class="nav-label">Portfolio</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Loading...</div>
+          <div class="user-email" id="user-email"></div>
+        </div>
+      </div>
+      <button class="btn-logout" id="btn-logout"><span>Sign out</span></button>
+    </div>
+  </aside>
+  <div class="mobile-overlay" id="mobile-overlay"></div>
+
+  <!-- Main -->
+  <div class="main-content">
+    <div class="topbar">
+      <button id="mobile-menu" style="display:none;background:none;border:none;cursor:pointer;padding:4px" class="btn">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="1" y1="4" x2="15" y2="4"/><line x1="1" y1="8" x2="15" y2="8"/><line x1="1" y1="12" x2="15" y2="12"/></svg>
+      </button>
+      <div class="search-wrap" style="flex:1;max-width:360px">
+        <input class="input" type="text" id="search-input" placeholder="Search stocks — AAPL, Tesla..."/>
+        <div class="search-results" id="search-results"></div>
+      </div>
+      <div style="margin-left:auto;font-size:12px;color:var(--text-3)">
+        <span class="live-dot"></span>Live
+      </div>
+    </div>
+
+    <div class="page-body">
+      <!-- Ticker strip -->
+      <div class="ticker-strip" id="ticker-strip">
+        <div class="ticker-card" style="min-width:110px"><div class="ticker-sym">—</div><div class="ticker-price">—</div><div class="ticker-chg">Loading...</div></div>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- Left: Chart + news -->
+        <div>
+          <div class="card chart-card" style="margin-bottom:16px">
+            <div class="chart-header">
+              <div>
+                <div class="chart-symbol" id="chart-symbol">AAPL · Apple Inc.</div>
+                <div class="chart-price" id="chart-price">—</div>
+                <div class="chart-change" id="chart-change"></div>
+              </div>
+              <div class="chart-meta" id="chart-meta"></div>
+            </div>
+            <div class="chart-tabs" id="chart-tabs">
+              <button class="chart-tab" data-range="1W">1W</button>
+              <button class="chart-tab active" data-range="1M">1M</button>
+              <button class="chart-tab" data-range="3M">3M</button>
+            </div>
+            <canvas id="stock-chart"></canvas>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Market news</div>
+            <div id="news-feed"></div>
+          </div>
+        </div>
+
+        <!-- Right: Watchlist + summary -->
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-label">Watchlist</div>
+            <div id="watchlist-container"></div>
+          </div>
+          <div class="card">
+            <div class="card-label">Market indices</div>
+            <div id="indices-container"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script type="module">
+  import { requireAuth, populateSidebarUser } from "./js/auth.js";
+  import { initSidebar } from "./js/sidebar.js";
+  import { getQuote, getTimeSeries, searchSymbol, getMockQuote, getMockTimeSeries, NEWS_MOCK, DEFAULT_SYMBOLS } from "./js/api.js";
+  import { db } from "./js/firebase.js";
+  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  let chartInstance = null;
+  let currentSymbol = "AAPL";
+  let currentRange = "1M";
+
+  requireAuth(async (user) => {
+    populateSidebarUser(user);
+    initSidebar("dashboard");
+
+    // Load user watchlist from Firestore
+    let watchlist = DEFAULT_SYMBOLS;
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (snap.exists()) watchlist = snap.data().watchlist || DEFAULT_SYMBOLS;
+    } catch(e) { /* use default */ }
+
+    loadTickerStrip(watchlist);
+    loadWatchlist(watchlist);
+    loadChart(currentSymbol, currentRange);
+    loadNews();
+    loadIndices();
+    setupSearch();
+    setupChartTabs();
+
+    // Mobile
+    if (window.innerWidth <= 768) {
+      document.getElementById("mobile-menu").style.display = "flex";
+    }
+  });
+
+  async function loadTickerStrip(symbols) {
+    const strip = document.getElementById("ticker-strip");
+    strip.innerHTML = "";
+    for (const sym of symbols) {
+      const q = await getQuote(sym).catch(() => getMockQuote(sym));
+      const up = parseFloat(q.change) >= 0;
+      const card = document.createElement("div");
+      card.className = "ticker-card" + (sym === currentSymbol ? " active" : "");
+      card.innerHTML = `<div class="ticker-sym">${q.symbol}</div><div class="ticker-price">$${q.price}</div><div class="ticker-chg ${up?'up':'down'}">${up?'+':''}${q.change} (${up?'+':''}${q.changePct}%)</div>`;
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".ticker-card").forEach(c => c.classList.remove("active"));
+        card.classList.add("active");
+        currentSymbol = sym;
+        loadChart(sym, currentRange);
+        updateChartHeader(q);
+      });
+      strip.appendChild(card);
+    }
+  }
+
+  async function loadChart(symbol, range) {
+    const q = await getQuote(symbol).catch(() => getMockQuote(symbol));
+    updateChartHeader(q);
+
+    let data = await getTimeSeries(symbol).catch(() => getMockTimeSeries(symbol));
+    if (range === "1W") data = data.slice(-7);
+    else if (range === "1M") data = data.slice(-30);
+    else if (range === "3M") data = data.slice(-60);
+
+    const labels = data.map(d => d.date.slice(5));
+    const closes = data.map(d => d.close);
+    const isUp = closes[closes.length-1] >= closes[0];
+
+    if (chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById("stock-chart").getContext("2d");
+    chartInstance = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          data: closes,
+          borderColor: isUp ? "#16a34a" : "#dc2626",
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: true,
+          backgroundColor: isUp ? "rgba(22,163,74,0.05)" : "rgba(220,38,38,0.05)",
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: { legend: { display: false }, tooltip: {
+          backgroundColor: "#0a0a0a", titleColor: "#fff", bodyColor: "#aaa",
+          padding: 10, borderWidth: 0,
+          callbacks: { label: ctx => ` $${ctx.parsed.y.toFixed(2)}` }
+        }},
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { family: "DM Mono", size: 10 }, color: "#999", maxTicksLimit: 8 }, border: { display: false } },
+          y: { grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { family: "DM Mono", size: 10 }, color: "#999", callback: v => "$"+v.toFixed(0) }, border: { display: false } }
+        }
+      }
+    });
+  }
+
+  function updateChartHeader(q) {
+    const up = parseFloat(q.change) >= 0;
+    document.getElementById("chart-symbol").textContent = q.symbol;
+    document.getElementById("chart-price").textContent = `$${q.price}`;
+    const chgEl = document.getElementById("chart-change");
+    chgEl.textContent = `${up?'+':''}${q.change} (${up?'+':''}${q.changePct}%) today`;
+    chgEl.style.color = up ? "var(--green)" : "var(--red)";
+    document.getElementById("chart-meta").innerHTML = `
+      <div class="chart-meta-item"><strong>$${q.open}</strong>Open</div>
+      <div class="chart-meta-item"><strong>$${q.high}</strong>High</div>
+      <div class="chart-meta-item"><strong>$${q.low}</strong>Low</div>
+      <div class="chart-meta-item"><strong>${q.volume}</strong>Volume</div>`;
+  }
+
+  function setupChartTabs() {
+    document.querySelectorAll(".chart-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".chart-tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        currentRange = tab.dataset.range;
+        loadChart(currentSymbol, currentRange);
+      });
+    });
+  }
+
+  async function loadWatchlist(symbols) {
+    const container = document.getElementById("watchlist-container");
+    container.innerHTML = "";
+    for (const sym of symbols) {
+      const q = await getQuote(sym).catch(() => getMockQuote(sym));
+      const up = parseFloat(q.change) >= 0;
+      const row = document.createElement("div");
+      row.className = "watch-row";
+      row.style.cursor = "pointer";
+      row.innerHTML = `
+        <div><div class="watch-sym">${q.symbol}</div></div>
+        <div class="watch-right">
+          <div class="watch-price num">$${q.price}</div>
+          <div class="watch-chg ${up?'up':'down'}">${up?'+':''}${q.changePct}%</div>
+        </div>`;
+      row.addEventListener("click", () => {
+        currentSymbol = sym;
+        document.querySelectorAll(".ticker-card").forEach(c => c.classList.remove("active"));
+        loadChart(sym, currentRange);
+      });
+      container.appendChild(row);
+    }
+  }
+
+  function loadNews() {
+    const feed = document.getElementById("news-feed");
+    feed.innerHTML = NEWS_MOCK.map(n => `
+      <div class="news-item">
+        <div class="news-source">${n.source} · ${n.time}</div>
+        <div class="news-title">${n.title}</div>
+      </div>`).join("");
+  }
+
+  async function loadIndices() {
+    const container = document.getElementById("indices-container");
+    const indices = [
+      { label: "S&P 500", change: "+0.62" },
+      { label: "NASDAQ", change: "+0.91" },
+      { label: "DOW", change: "-0.18" }
+    ];
+    container.innerHTML = indices.map(idx => {
+      const up = parseFloat(idx.change) >= 0;
+      return `<div class="watch-row">
+        <div class="watch-sym">${idx.label}</div>
+        <div class="watch-chg ${up?'up':'down'}">${up?'+':''}${idx.change}%</div>
+      </div>`;
+    }).join("");
+  }
+
+  function setupSearch() {
+    const input = document.getElementById("search-input");
+    const results = document.getElementById("search-results");
+    let debounce;
+    input.addEventListener("input", () => {
+      clearTimeout(debounce);
+      const q = input.value.trim();
+      if (q.length < 1) { results.classList.remove("open"); return; }
+      debounce = setTimeout(async () => {
+        const matches = await searchSymbol(q).catch(() => []);
+        if (!matches.length) { results.classList.remove("open"); return; }
+        results.innerHTML = matches.map(m => `
+          <div class="search-result-item" data-symbol="${m.symbol}">
+            <div><div class="sr-sym">${m.symbol}</div><div class="sr-name">${m.name}</div></div>
+            <span class="sr-type">${m.type}</span>
+          </div>`).join("");
+        results.classList.add("open");
+        results.querySelectorAll(".search-result-item").forEach(item => {
+          item.addEventListener("click", () => {
+            currentSymbol = item.dataset.symbol;
+            input.value = "";
+            results.classList.remove("open");
+            loadChart(currentSymbol, currentRange);
+          });
+        });
+      }, 400);
+    });
+    document.addEventListener("click", e => {
+      if (!e.target.closest(".search-wrap")) results.classList.remove("open");
+    });
+  }
+</script>
+</body>
+</html>

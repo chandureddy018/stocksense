@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Portfolio — StockSense</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/sidebar.css"/>
+  <style>
+    .portfolio-grid { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
+    .trade-form { display: flex; flex-direction: column; gap: 12px; }
+    .trade-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .est-cost { font-size: 12px; color: var(--text-3); padding: 8px 0; border-top: 1px solid var(--border); margin-top: 4px; }
+    .est-cost strong { color: var(--text); font-family: var(--mono); }
+    .balance-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--text-2);
+    }
+    .balance-amount { font-family: var(--mono); font-weight: 500; color: var(--text); }
+    .holding-bar { height: 3px; background: var(--bg); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+    .holding-bar-fill { height: 100%; background: var(--text); border-radius: 2px; }
+    .empty-state { text-align: center; padding: 32px; color: var(--text-3); font-size: 13px; }
+    @media(max-width:900px) { .portfolio-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-logo">Stock<strong>Sense</strong></span>
+      <button class="sidebar-toggle" id="sidebar-toggle"><span></span><span></span><span></span></button>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-link" data-page="dashboard" href="dashboard.html">
+        <span class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg></span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a class="nav-link" data-page="portfolio" href="portfolio.html">
+        <span class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,11 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg></span>
+        <span class="nav-label">Portfolio</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Loading...</div>
+          <div class="user-email" id="user-email"></div>
+        </div>
+      </div>
+      <button class="btn-logout" id="btn-logout"><span>Sign out</span></button>
+    </div>
+  </aside>
+  <div class="mobile-overlay" id="mobile-overlay"></div>
+
+  <div class="main-content">
+    <div class="topbar">
+      <button id="mobile-menu" style="display:none;background:none;border:none;cursor:pointer;padding:4px" class="btn">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="1" y1="4" x2="15" y2="4"/><line x1="1" y1="8" x2="15" y2="8"/><line x1="1" y1="12" x2="15" y2="12"/></svg>
+      </button>
+      <span style="font-size:14px;font-weight:500">Portfolio</span>
+      <div style="margin-left:auto">
+        <span class="balance-pill">Cash <span class="balance-amount" id="balance-display">$10,000.00</span></span>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <!-- Stats row -->
+      <div class="stat-grid" id="stat-grid" style="margin-bottom:20px">
+        <div class="stat-card"><div class="stat-label">Portfolio value</div><div class="stat-val" id="stat-value">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total P&amp;L</div><div class="stat-val" id="stat-pl">—</div></div>
+        <div class="stat-card"><div class="stat-label">Return</div><div class="stat-val" id="stat-return">—</div></div>
+        <div class="stat-card"><div class="stat-label">Positions</div><div class="stat-val" id="stat-positions">0</div></div>
+      </div>
+
+      <div class="portfolio-grid">
+        <!-- Left: Holdings + activity -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="card-label" style="display:flex;justify-content:space-between;align-items:center">
+              Holdings
+              <span id="holdings-count" style="font-size:11px;color:var(--text-3)"></span>
+            </div>
+            <div id="holdings-table"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Watchlist
+              <span style="font-size:11px;color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px">— add symbols to track</span>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <input class="input" id="watchlist-input" placeholder="Add symbol e.g. AMZN" style="flex:1"/>
+              <button class="btn" onclick="addToWatchlist()">Add</button>
+            </div>
+            <div id="watchlist-manage"></div>
+          </div>
+        </div>
+
+        <!-- Right: Trade panel + activity -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="card-label">Trade</div>
+            <div class="trade-form">
+              <div>
+                <label class="form-label">Symbol</label>
+                <input class="input" id="trade-symbol" placeholder="e.g. AAPL" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase(); updateEstimate()"/>
+              </div>
+              <div>
+                <label class="form-label">Quantity</label>
+                <input class="input" type="number" id="trade-qty" placeholder="1" min="1" oninput="updateEstimate()"/>
+              </div>
+              <div class="est-cost">
+                Estimated cost: <strong id="est-cost">—</strong>
+              </div>
+              <div class="trade-row">
+                <button class="btn btn-buy" onclick="executeTrade('buy')">Buy</button>
+                <button class="btn btn-sell" onclick="executeTrade('sell')">Sell</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Activity</div>
+            <div id="activity-log"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { requireAuth, populateSidebarUser } from "./js/auth.js";
+  import { initSidebar, showToast } from "./js/sidebar.js";
+  import { getQuote, getMockQuote } from "./js/api.js";
+  import { db } from "./js/firebase.js";
+  import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  let userData = null;
+  let currentUser = null;
+  const STARTING_BALANCE = 10000;
+
+  requireAuth(async (user) => {
+    currentUser = user;
+    populateSidebarUser(user);
+    initSidebar("portfolio");
+    if (window.innerWidth <= 768) document.getElementById("mobile-menu").style.display = "flex";
+    await loadUserData();
+  });
+
+  async function loadUserData() {
+    const snap = await getDoc(doc(db, "users", currentUser.uid));
+    if (!snap.exists()) return;
+    userData = snap.data();
+    renderAll();
+  }
+
+  async function renderAll() {
+    renderBalance();
+    await renderHoldings();
+    renderWatchlistManage();
+    renderActivity();
+  }
+
+  function renderBalance() {
+    const bal = userData.balance ?? STARTING_BALANCE;
+    document.getElementById("balance-display").textContent = `$${bal.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+  }
+
+  async function renderHoldings() {
+    const holdings = userData.trades ? computeHoldings(userData.trades) : {};
+    const syms = Object.keys(holdings);
+    document.getElementById("holdings-count").textContent = `${syms.length} position${syms.length!==1?'s':''}`;
+    document.getElementById("stat-positions").textContent = syms.length;
+
+    const container = document.getElementById("holdings-table");
+    if (!syms.length) {
+      container.innerHTML = '<div class="empty-state">No holdings yet. Use the trade panel to buy your first stock.</div>';
+      updateStats(0);
+      return;
+    }
+
+    let totalValue = 0;
+    let totalCost = 0;
+    let rows = [];
+
+    for (const sym of syms) {
+      const h = holdings[sym];
+      const q = await getQuote(sym).catch(() => getMockQuote(sym));
+      const currentPrice = parseFloat(q.price);
+      const marketVal = currentPrice * h.qty;
+      const costBasis = h.avgPrice * h.qty;
+      const pl = marketVal - costBasis;
+      const plPct = ((pl / costBasis) * 100);
+      const up = pl >= 0;
+      totalValue += marketVal;
+      totalCost += costBasis;
+      rows.push({ sym, h, currentPrice, marketVal, pl, plPct, up });
+    }
+
+    updateStats(totalValue, totalValue - totalCost, totalCost);
+
+    // Sort by market value desc
+    rows.sort((a, b) => b.marketVal - a.marketVal);
+    const maxVal = Math.max(...rows.map(r => r.marketVal));
+
+    container.innerHTML = `
+      <table class="data-table">
+        <thead><tr>
+          <th>Symbol</th><th>Shares</th><th>Avg price</th><th>Current</th><th>Value</th><th>P&amp;L</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r => `<tr>
+            <td><strong>${r.sym}</strong>
+              <div class="holding-bar"><div class="holding-bar-fill" style="width:${Math.round((r.marketVal/maxVal)*100)}%"></div></div>
+            </td>
+            <td class="num">${r.h.qty}</td>
+            <td class="num">$${r.h.avgPrice.toFixed(2)}</td>
+            <td class="num">$${r.currentPrice.toFixed(2)}</td>
+            <td class="num">$${r.marketVal.toFixed(2)}</td>
+            <td><span class="badge ${r.up?'badge-up':'badge-down'}">${r.up?'+':''}${r.pl.toFixed(2)} (${r.up?'+':''}${r.plPct.toFixed(1)}%)</span></td>
+          </tr>`).join("")}
+        </tbody>
+      </table>`;
+  }
+
+  function updateStats(totalValue, pl = 0, totalCost = STARTING_BALANCE) {
+    const plEl = document.getElementById("stat-pl");
+    const retEl = document.getElementById("stat-return");
+    const up = pl >= 0;
+    document.getElementById("stat-value").textContent = `$${totalValue.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    plEl.textContent = `${up?'+':''}$${Math.abs(pl).toFixed(2)}`;
+    plEl.className = `stat-val ${up?'up':'down'}`;
+    const ret = totalCost > 0 ? (pl/totalCost)*100 : 0;
+    retEl.textContent = `${up?'+':''}${ret.toFixed(1)}%`;
+    retEl.className = `stat-val ${up?'up':'down'}`;
+  }
+
+  function computeHoldings(trades) {
+    const h = {};
+    for (const t of trades) {
+      if (!h[t.symbol]) h[t.symbol] = { qty: 0, totalCost: 0, avgPrice: 0 };
+      if (t.type === "buy") {
+        h[t.symbol].totalCost += t.price * t.qty;
+        h[t.symbol].qty += t.qty;
+      } else {
+        h[t.symbol].qty -= t.qty;
+        h[t.symbol].totalCost -= t.price * t.qty;
+      }
+      if (h[t.symbol].qty > 0) {
+        h[t.symbol].avgPrice = h[t.symbol].totalCost / h[t.symbol].qty;
+      } else {
+        delete h[t.symbol];
+      }
+    }
+    return h;
+  }
+
+  function renderWatchlistManage() {
+    const wl = userData.watchlist || [];
+    const container = document.getElementById("watchlist-manage");
+    if (!wl.length) { container.innerHTML = '<div class="empty-state">Your watchlist is empty.</div>'; return; }
+    container.innerHTML = wl.map(sym => `
+      <div class="watch-row">
+        <div class="watch-sym">${sym}</div>
+        <button onclick="removeFromWatchlist('${sym}')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-3);padding:4px 6px;border-radius:4px" onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='var(--text-3)'">Remove</button>
+      </div>`).join("");
+  }
+
+  function renderActivity() {
+    const trades = (userData.trades || []).slice().reverse().slice(0, 10);
+    const log = document.getElementById("activity-log");
+    if (!trades.length) { log.innerHTML = '<div class="empty-state">No trades yet.</div>'; return; }
+    log.innerHTML = trades.map(t => `
+      <div class="activity-item">
+        <div class="activity-dot ${t.type}"></div>
+        <div>
+          <div class="activity-text">${t.type === 'buy' ? 'Bought' : 'Sold'} ${t.qty} × <strong>${t.symbol}</strong> at $${t.price.toFixed(2)}</div>
+          <div class="activity-time">${new Date(t.date).toLocaleDateString("en-IN", {day:"numeric",month:"short",year:"numeric"})}</div>
+        </div>
+      </div>`).join("");
+  }
+
+  window.updateEstimate = async () => {
+    const sym = document.getElementById("trade-symbol").value.trim();
+    const qty = parseInt(document.getElementById("trade-qty").value) || 0;
+    if (!sym || !qty) { document.getElementById("est-cost").textContent = "—"; return; }
+    const q = await getQuote(sym).catch(() => getMockQuote(sym));
+    const cost = parseFloat(q.price) * qty;
+    document.getElementById("est-cost").textContent = `$${cost.toFixed(2)}`;
+  };
+
+  window.executeTrade = async (type) => {
+    const sym = document.getElementById("trade-symbol").value.trim().toUpperCase();
+    const qty = parseInt(document.getElementById("trade-qty").value);
+    if (!sym || !qty || qty < 1) { showToast("Enter a valid symbol and quantity."); return; }
+
+    const q = await getQuote(sym).catch(() => getMockQuote(sym));
+    const price = parseFloat(q.price);
+    const cost = price * qty;
+    const bal = userData.balance ?? STARTING_BALANCE;
+
+    if (type === "buy" && cost > bal) { showToast("Insufficient balance."); return; }
+
+    if (type === "sell") {
+      const holdings = computeHoldings(userData.trades || []);
+      if (!holdings[sym] || holdings[sym].qty < qty) { showToast(`You don't have ${qty} shares of ${sym}.`); return; }
+    }
+
+    const trade = { symbol: sym, qty, price, type, date: new Date().toISOString() };
+    const newBalance = type === "buy" ? bal - cost : bal + cost;
+
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      trades: arrayUnion(trade),
+      balance: parseFloat(newBalance.toFixed(2))
+    });
+
+    userData.trades = [...(userData.trades || []), trade];
+    userData.balance = parseFloat(newBalance.toFixed(2));
+
+    showToast(`${type === 'buy' ? 'Bought' : 'Sold'} ${qty} × ${sym} at $${price.toFixed(2)}`);
+    document.getElementById("trade-symbol").value = "";
+    document.getElementById("trade-qty").value = "";
+    document.getElementById("est-cost").textContent = "—";
+    await renderAll();
+  };
+
+  window.addToWatchlist = async () => {
+    const input = document.getElementById("watchlist-input");
+    const sym = input.value.trim().toUpperCase();
+    if (!sym) return;
+    if ((userData.watchlist || []).includes(sym)) { showToast(`${sym} is already in your watchlist.`); return; }
+    await updateDoc(doc(db, "users", currentUser.uid), { watchlist: arrayUnion(sym) });
+    userData.watchlist = [...(userData.watchlist || []), sym];
+    input.value = "";
+    renderWatchlistManage();
+    showToast(`${sym} added to watchlist.`);
+  };
+
+  window.removeFromWatchlist = async (sym) => {
+    await updateDoc(doc(db, "users", currentUser.uid), { watchlist: arrayRemove(sym) });
+    userData.watchlist = (userData.watchlist || []).filter(s => s !== sym);
+    renderWatchlistManage();
+    showToast(`${sym} removed.`);
+  };
+</script>
+</body>
+</html>
