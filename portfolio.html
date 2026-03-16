@@ -91,7 +91,7 @@
             </div>
             <div style="display:flex;gap:8px;margin-bottom:14px">
               <input class="input" id="watchlist-input" placeholder="Add symbol e.g. AMZN" style="flex:1"/>
-              <button class="btn" onclick="addToWatchlist()">Add</button>
+              <button class="btn" id="btn-add-watchlist">Add</button>
             </div>
             <div id="watchlist-manage"></div>
           </div>
@@ -104,18 +104,18 @@
             <div class="trade-form">
               <div>
                 <label class="form-label">Symbol</label>
-                <input class="input" id="trade-symbol" placeholder="e.g. AAPL" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase(); updateEstimate()"/>
+                <input class="input" id="trade-symbol" placeholder="e.g. AAPL" style="text-transform:uppercase"/>
               </div>
               <div>
                 <label class="form-label">Quantity</label>
-                <input class="input" type="number" id="trade-qty" placeholder="1" min="1" oninput="updateEstimate()"/>
+                <input class="input" type="number" id="trade-qty" placeholder="1" min="1"/>
               </div>
               <div class="est-cost">
                 Estimated cost: <strong id="est-cost">—</strong>
               </div>
               <div class="trade-row">
-                <button class="btn btn-buy" onclick="executeTrade('buy')">Buy</button>
-                <button class="btn btn-sell" onclick="executeTrade('sell')">Sell</button>
+                <button class="btn btn-buy" id="btn-buy">Buy</button>
+                <button class="btn btn-sell" id="btn-sell">Sell</button>
               </div>
             </div>
           </div>
@@ -148,6 +148,19 @@
     populateSidebarUser(user);
     initSidebar("portfolio");
     if (window.innerWidth <= 768) document.getElementById("mobile-menu").style.display = "flex";
+
+    // Wire up buttons inside module scope
+    document.getElementById("btn-buy").addEventListener("click", () => executeTrade("buy"));
+    document.getElementById("btn-sell").addEventListener("click", () => executeTrade("sell"));
+    document.getElementById("btn-add-watchlist").addEventListener("click", addToWatchlist);
+
+    // Wire up inputs
+    document.getElementById("trade-symbol").addEventListener("input", function() {
+      this.value = this.value.toUpperCase();
+      updateEstimate();
+    });
+    document.getElementById("trade-qty").addEventListener("input", updateEstimate);
+
     await loadUserData();
   });
 
@@ -266,8 +279,13 @@
     container.innerHTML = wl.map(sym => `
       <div class="watch-row">
         <div class="watch-sym">${sym}</div>
-        <button onclick="removeFromWatchlist('${sym}')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-3);padding:4px 6px;border-radius:4px" onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='var(--text-3)'">Remove</button>
+        <button data-sym="${sym}" class="btn-remove-watch" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-3);padding:4px 6px;border-radius:4px">Remove</button>
       </div>`).join("");
+    container.querySelectorAll(".btn-remove-watch").forEach(btn => {
+      btn.addEventListener("click", () => removeFromWatchlist(btn.dataset.sym));
+      btn.addEventListener("mouseenter", () => btn.style.color = "var(--red)");
+      btn.addEventListener("mouseleave", () => btn.style.color = "var(--text-3)");
+    });
   }
 
   function renderActivity() {
@@ -284,7 +302,7 @@
       </div>`).join("");
   }
 
-  window.updateEstimate = async () => {
+  async function updateEstimate() {
     const sym = document.getElementById("trade-symbol").value.trim();
     const qty = parseInt(document.getElementById("trade-qty").value) || 0;
     if (!sym || !qty) { document.getElementById("est-cost").textContent = "—"; return; }
@@ -293,7 +311,7 @@
     document.getElementById("est-cost").textContent = `$${cost.toFixed(2)}`;
   };
 
-  window.executeTrade = async (type) => {
+  async function executeTrade(type) {
     const sym = document.getElementById("trade-symbol").value.trim().toUpperCase();
     const qty = parseInt(document.getElementById("trade-qty").value);
     if (!sym || !qty || qty < 1) { showToast("Enter a valid symbol and quantity."); return; }
@@ -329,7 +347,7 @@
     await renderAll();
   };
 
-  window.addToWatchlist = async () => {
+  async function addToWatchlist() {
     const input = document.getElementById("watchlist-input");
     const sym = input.value.trim().toUpperCase();
     if (!sym) return;
@@ -341,7 +359,7 @@
     showToast(`${sym} added to watchlist.`);
   };
 
-  window.removeFromWatchlist = async (sym) => {
+  async function removeFromWatchlist(sym) {
     await updateDoc(doc(db, "users", currentUser.uid), { watchlist: arrayRemove(sym) });
     userData.watchlist = (userData.watchlist || []).filter(s => s !== sym);
     renderWatchlistManage();
