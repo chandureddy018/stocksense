@@ -24,7 +24,7 @@
     }
     .chart-tab.active { background: var(--text); color: var(--surface); }
     .chart-tab:hover:not(.active) { background: var(--bg); color: var(--text); }
-    #stock-chart { width: 100%; height: 220px; }
+    #stock-chart { width: 100% !important; height: 220px !important; max-height: 220px; display: block; }
 
     .search-wrap { position: relative; margin-bottom: 16px; }
     .search-results {
@@ -236,7 +236,7 @@
         }]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: false, maintainAspectRatio: false,
         interaction: { mode: "index", intersect: false },
         plugins: { legend: { display: false }, tooltip: {
           backgroundColor: "#0a0a0a", titleColor: "#fff", bodyColor: "#aaa",
