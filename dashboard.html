@@ -161,6 +161,10 @@
   let chartInstance = null;
   let currentSymbol = "AAPL";
   let currentRange = "1M";
+  let watchlistSymbols = [];
+  let refreshInterval = null;
+  let countdown = 60;
+  let countdownInterval = null;
 
   requireAuth(async (user) => {
     populateSidebarUser(user);
@@ -173,6 +177,8 @@
       if (snap.exists()) watchlist = snap.data().watchlist || DEFAULT_SYMBOLS;
     } catch(e) { /* use default */ }
 
+    watchlistSymbols = watchlist;
+
     loadTickerStrip(watchlist);
     loadWatchlist(watchlist);
     loadChart(currentSymbol, currentRange);
@@ -180,12 +186,41 @@
     loadIndices();
     setupSearch();
     setupChartTabs();
+    startAutoRefresh(watchlist);
 
     // Mobile
     if (window.innerWidth <= 768) {
       document.getElementById("mobile-menu").style.display = "flex";
     }
   });
+
+  function startAutoRefresh(watchlist) {
+    // Add countdown indicator to topbar
+    const topbar = document.querySelector(".topbar");
+    const indicator = document.createElement("div");
+    indicator.id = "refresh-indicator";
+    indicator.style.cssText = "font-size:11px;color:var(--text-3);display:flex;align-items:center;gap:5px;margin-left:12px";
+    indicator.innerHTML = `<span id="countdown-text">Refreshing in 60s</span>`;
+    topbar.appendChild(indicator);
+
+    // Countdown timer
+    countdownInterval = setInterval(() => {
+      countdown--;
+      const el = document.getElementById("countdown-text");
+      if (el) el.textContent = countdown <= 5 ? "Refreshing..." : `Refreshing in ${countdown}s`;
+      if (countdown <= 0) countdown = 60;
+    }, 1000);
+
+    // Actual refresh every 60 seconds
+    refreshInterval = setInterval(async () => {
+      countdown = 60;
+      await loadTickerStrip(watchlist);
+      await loadWatchlist(watchlist);
+      // Refresh chart header price only (don't redraw chart — too disruptive)
+      const q = await getQuote(currentSymbol).catch(() => getMockQuote(currentSymbol));
+      updateChartHeader(q);
+    }, 60000);
+  }
 
   async function loadTickerStrip(symbols) {
     const strip = document.getElementById("ticker-strip");
